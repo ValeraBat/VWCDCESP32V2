@@ -475,8 +475,6 @@ void webUI_broadcastCdcRaw(const String &line) {
     queueWsMessage("[CDC RAW] " + line);
 }
 
-extern bool g_wifiActive;
-bool g_wifiActive = true;
 
 // --- Фоновая задача FreeRTOS (Сервер) ---
 
