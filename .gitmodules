@@ -1,0 +1,6 @@
+[submodule "lib/BT1026_Driver"]
+	path = lib/BT1026_Driver
+	url = https://github.com/ValeraBat/BT1026D_Driver.git
+[submodule "lib/VWCDC_Driver"]
+	path = lib/VWCDC_Driver
+	url = https://github.com/ValeraBat/VWCDC_Driver.git
