@@ -99,7 +99,8 @@ public:
 
 private:
     HardwareSerial& _serial;
-    BTOperationalState _opState;
+    volatile BTOperationalState _opState; // Make volatile since it's changed from another thread
+    volatile uint32_t _lastCmdTime;       // Track time of last sent command
     BTConnState _connState;
     
     BTLogCallback _logCb = nullptr;

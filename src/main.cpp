@@ -6,7 +6,7 @@
 
 // Раскомментируй для работы с аппаратным Serial! 
 // Должно совпадать с тем, что ты написал в webUI.h, если уже написал.
-#define USE_HW_SERIAL 
+//#define USE_HW_SERIAL 
 
 // ---------------- ПИНЫ ----------------
 const int BT_RX_PIN = 17;
@@ -104,16 +104,26 @@ void onBtStateChange(BTConnState newState, BTConnState oldState) {
 
 // Прилетели метаданные (Время)
 void onBtMetadata(const char* type, const char* data) {
-    // Драйвер BT должен присылать тип "TRACKINFO" и data в виде "123000" (миллисекунды)
     if (strcmp(type, "TRACKINFO") == 0) {
-        long timeMs = atol(data); 
-        uint8_t mins = (timeMs / 1000) / 60;
-        uint8_t secs = (timeMs / 1000) % 60;
+        // Передаем сырую инфу (название трека и т.д.) в WebUI
+        webUI_broadcastState("TRACKINFO", String(data));
+    } else if (strcmp(type, "TRACKSTAT") == 0) {
+        // Формат данных: status,current_ms,total_ms (или что-то подобное)
+        // Распарсим первое число как время, для передачи на панель приборов CDC
+        webUI_broadcastState("TRACKSTAT", String(data));
         
-        // Передаем время в CDC безопасно!
-        if (xSemaphoreTake(g_cdcMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
-            cdcModule.setPlayTime(mins, secs);
-            xSemaphoreGive(g_cdcMutex);
+        // Попробуем вытащить время: статус(отбросим) и миллисекунды
+        int status;
+        long timeMs;
+        if (sscanf(data, "%d,%ld", &status, &timeMs) == 2) {
+            uint8_t mins = (timeMs / 1000) / 60;
+            uint8_t secs = (timeMs / 1000) % 60;
+
+            // Передаем время в CDC безопасно!
+            if (xSemaphoreTake(g_cdcMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+                cdcModule.setPlayTime(mins, secs);
+                xSemaphoreGive(g_cdcMutex);
+            }
         }
     } else if (strcmp(type, "AVRCP_READY") == 0) {
         // Телефон сообщил по Bluetooth, что он готов принимать команды плеера

@@ -64,44 +64,58 @@ bool CDC::begin(int DataOutPin, int SCKPin, int MOSIPin, int MISOPin) {
 
 // Custom NEC pulse to 32-bit integer decoder tailored to Volkswagen protocol
 bool CDC::_rmtDecoder(const rmt_item32_t* item, size_t num_items, uint32_t* decoded_cmd) {
-    if (num_items < 64) return false;
+    // A packet needs at least 32 data bits (some leading noise is possible)
+    if (num_items < 32) return false;
 
     uint32_t cmd = 0;
-    int bit_pos = 0; // MSB or LSB tracking, standard assigns bits sequentially
+    int bit_pos = 0; 
 
-    for (size_t i = 0; i < num_items && bit_pos < 32; i++) {
-        uint32_t duration0 = item[i].duration0; 
-        uint32_t duration1 = item[i].duration1;
+    for (size_t i = 0; i < num_items; i++) {
+        // Find LOW pulse duration (since line is HIGH idle, LOW is the active logic)
+        uint32_t lowDuration = 0;
+        if (item[i].level0 == 0) {
+            lowDuration = item[i].duration0;
+        } else if (item[i].level1 == 0) {
+            // Started capturing on rising edge, meaning level1 is the LOW pulse
+            lowDuration = item[i].duration1;
+        } else {
+            continue; // Not a valid transition pair
+        }
 
-        if (item[i].level0 == 1 || item[i].level1 == 0) continue; // Not our low/high edge order
+        // vwcdpic timing specs in microseconds:
+        // Start bit:  LOW > 3200µs
+        // Bit '1':    LOW > 1248µs
+        // Bit '0':    LOW < 1248µs
+        // Noise filter: LOW > 256µs minimum
 
-        // Timing is roughly inverted NEC:
-        // Logic 0: ~560us LOW + ~560us HIGH
-        // Logic 1: ~560us LOW + ~1690us HIGH
-        // RMT counts in us (divider 80)
-        
-        // Let's divide by 100 on durations to make windowing safe against jitter
-        uint32_t d0_ms = duration0 / 100;
-        uint32_t d1_ms = duration1 / 100;
+        if (lowDuration < 256) {
+            continue; // Noise
+        }
 
-        // Valid start duration0 is ~5-8 (500-800us)
-        if (d0_ms >= 4 && d0_ms <= 9) {
-            if (d1_ms >= 3 && d1_ms <= 8) {
-                // Logic 0
-                cmd |= (0 << bit_pos);
-                bit_pos++;
-            } else if (d1_ms >= 10 && d1_ms <= 22) {
-                // Logic 1
-                cmd |= (1 << bit_pos);
-                bit_pos++;
+        if (lowDuration >= 3200) {
+            // START Bit found. Reset tracking for a fresh 32-bit packet
+            cmd = 0;
+            bit_pos = 0;
+            continue;
+        }
+
+        // Data bit
+        if (bit_pos < 32) {
+            cmd <<= 1; // MSB first for each byte, pushed chronologically correctly
+            if (lowDuration >= 1248) {
+                cmd |= 0x01; // Logic 1
+            } else {
+                cmd |= 0x00; // Logic 0
+            }
+            bit_pos++;
+
+            if (bit_pos == 32) {
+                *decoded_cmd = cmd;
+                return true; 
             }
         }
     }
 
-    if (bit_pos >= 32) {
-        *decoded_cmd = cmd;
-        return true;
-    }
     return false;
 }
 

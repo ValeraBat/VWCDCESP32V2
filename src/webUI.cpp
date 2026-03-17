@@ -1,4 +1,4 @@
-bool g_wifiActive = true;
+﻿bool g_wifiActive = true;
 #include "webUI.h"
 #include <WiFi.h>
 #include <WebServer.h>
@@ -113,7 +113,7 @@ static const char MAIN_PAGE[] PROGMEM = R"rawliteral(
         <!-- Панель управления (сверху) -->
         <div class="panel-area">
             <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 10px; padding: 0 5px;">
-                <span style="color:#aaa;">State: <strong id="ui_state" style="color:#fff;">UNKNOWN</strong></span>
+                <div style="display:flex; flex-direction:column;"><span style="color:#aaa;">State: <strong id="ui_state" style="color:#fff;">UNKNOWN</strong></span><span style="color:#aaa; font-size:0.85rem;" id="ui_track">No Track</span><span style="color:#81C784; font-size:0.85rem; font-family:monospace;" id="ui_time">00:00</span></div>
                 <div style="display:flex; gap:5px;">
                     <button class="action" style="padding:6px 10px; font-size:0.8rem;" onclick="sendCustomAT('AT+STAT')">Refresh</button>
                     <button class="action" style="padding:6px 10px; font-size:0.8rem;" onclick="sendCustomAT('AT+BACKWARD')">⏮</button>
@@ -269,6 +269,20 @@ static const char MAIN_PAGE[] PROGMEM = R"rawliteral(
         }
 
         function handleWSMessage(text) {
+            if(text.startsWith('[STATE] TRACKINFO:')) {
+                document.getElementById('ui_track').innerText = text.replace('[STATE] TRACKINFO:', '').trim();
+                return;
+            }
+            if(text.startsWith('[STATE] TRACKSTAT:')) {
+                const statData = text.replace('[STATE] TRACKSTAT:', '').trim().split(',');
+                if(statData.length >= 2) {
+                    const ms = parseInt(statData[1]);
+                    const m = Math.floor(ms / 60000);
+                    const s = Math.floor((ms % 60000) / 1000);
+                    document.getElementById('ui_time').innerText = m.toString().padStart(2, '0') + ':' + s.toString().padStart(2, '0');
+                }
+                return;
+            }
             // 1. Парсинг статуса
             if(text.includes('Music PLAYING')) document.getElementById('ui_state').innerText = "PLAYING";
             if(text.includes('Music PAUSED')) document.getElementById('ui_state').innerText = "PAUSED";
@@ -475,6 +489,11 @@ void webUI_broadcastCdcRaw(const String &line) {
     queueWsMessage("[CDC RAW] " + line);
 }
 
+void webUI_broadcastState(const String &type, const String &data) {
+    if (!g_wifiActive) return;
+    queueWsMessage("[STATE] " + type + ":" + data);
+}
+
 
 // --- Фоновая задача FreeRTOS (Сервер) ---
 
@@ -539,7 +558,11 @@ void _webUITask(void *pvParameters) {
                 }
 
                 for (size_t i = 0; i < outCount; i++) {
+                    // It is safer to broadcast and ignore write errors
+                    // However, broadcastTXT might block if a single client is broken
+                    // We use the library default, but we'll add a yield.
                     webSocket.broadcastTXT(outBuf[i]);
+                    vTaskDelay(pdMS_TO_TICKS(1)); // let network stack breathe
                 }
             } else if (g_logMutex != NULL && xSemaphoreTake(g_logMutex, pdMS_TO_TICKS(20)) == pdTRUE) {
                 wsQueueHead = 0;

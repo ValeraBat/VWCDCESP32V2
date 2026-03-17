@@ -1,10 +1,11 @@
-#include "BT1026D_driver.h"
+﻿#include "BT1026D_driver.h"
 #include <stdarg.h> // Это нужно для форматирования строк (va_list)
 
 // Конструктор: просто сохраняем ссылку на Serial и задаем начальные состояния
 BT1026D::BT1026D(HardwareSerial& serial) 
     : _serial(serial), 
       _opState(BTOperationalState::UNINITIALIZED), 
+      _lastCmdTime(0),
       _connState(BTConnState::DISCONNECTED),
       _rxIndex(0),
       _taskHandle(nullptr),
@@ -80,6 +81,7 @@ bool BT1026D::enqueueCommand(BTCmdType cmd, int param) {
 void BT1026D::sendRawCommand(const char* cmd) {
     _log("[BT RAW TX] %s", cmd);
     _serial.println(cmd);
+    _lastCmdTime = millis();
     _opState = BTOperationalState::WAIT_RESPONSE;
 }
 
@@ -257,6 +259,12 @@ void BT1026D::_handleEvent(const char* eventStr) {
             _metaCb("TRACKINFO", eventStr + 11);
         }
     }
+    // ПАРСИНГ СТАТУСА ВОСПРОИЗВЕДЕНИЯ (+TRACKSTAT=...)
+    else if (strncmp(eventStr, "+TRACKSTAT=", 11) == 0) {
+        if (_metaCb != nullptr) {
+            _metaCb("TRACKSTAT", eventStr + 11);
+        }
+    }
     // ПАРСИНГ НОМЕРА ЗВОНЯЩЕГО (+HFPCID=...)
     else if (strncmp(eventStr, "+HFPCID=", 8) == 0) {
         if (_metaCb != nullptr) {
@@ -266,8 +274,9 @@ void BT1026D::_handleEvent(const char* eventStr) {
 }
 
 void BT1026D::_parseLine(const char* line) {
-    _log("[BT RX] %s", line);
-    
+    if (strncmp(line, "+TRACKSTAT=", 11) != 0 && strncmp(line, "+TRACKINFO=", 11) != 0) {
+        _log("[BT RX] %s", line);
+    }
     if (strcmp(line, "OK") == 0 || strcmp(line, "ERROR") == 0) {
         _opState = BTOperationalState::IDLE;
         return;
@@ -284,7 +293,6 @@ void BT1026D::_parseLine(const char* line) {
 // ==========================================================
 void BT1026D::_taskLoop() {
     BTCommand currentCmd;
-    uint32_t lastCmdTime = 0;
 
     while (true) {
         // 1. Читаем все, что пришло из UART (максимально быстро)
@@ -304,7 +312,7 @@ void BT1026D::_taskLoop() {
                     
                     // Переходим в состояние ожидания ответа
                     _opState = BTOperationalState::WAIT_RESPONSE;
-                    lastCmdTime = millis();
+                    _lastCmdTime = millis();
                 }
                 break;
 
@@ -312,7 +320,7 @@ void BT1026D::_taskLoop() {
                 // Ждем ОК или ERROR от модуля. 
                 // А как мы из него выйдем? Это сделает _parseLine(), когда увидит "OK\r\n".
                 // Но нам нужен таймаут! Вдруг модуль завис или мы отправили плохую команду?
-                if (millis() - lastCmdTime > 2000) { // Таймаут 2 секунды
+                if (millis() - _lastCmdTime > 2000) { // Таймаут 2 секунды
                     _log("[BT] Command Timeout!");
                     _opState = BTOperationalState::IDLE; // Сдаемся, возвращаемся в IDLE
                 }
