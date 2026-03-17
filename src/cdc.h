@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <Arduino.h>
 #include <SPI.h>
@@ -60,7 +60,7 @@ class CDC {
         uint8_t _currentTrack = 1;
         uint8_t _currentDisc = 1;
         uint8_t _modeByte = 0xFF;
-        uint8_t _scanByte = 0xFF; // Mode bytes for PLAY
+        uint8_t _scanByte = 0xCF; // Mode bytes for PLAY
         
         uint32_t _validPackets = 0;
         uint32_t _badPrefixPackets = 0;

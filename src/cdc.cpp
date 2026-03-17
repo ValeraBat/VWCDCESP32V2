@@ -1,4 +1,4 @@
-#include "cdc.h"
+﻿#include "cdc.h"
 
 CDC::CDC() : _taskHandle(nullptr) {
     _spi = new SPIClass(VSPI);
@@ -54,7 +54,7 @@ bool CDC::begin(int DataOutPin, int SCKPin, int MOSIPin, int MISOPin) {
         "CDC_Task",
         4096,
         this,
-        2,  
+        3,
         &_taskHandle,
         1   // Core 1
     );
@@ -308,6 +308,7 @@ void CDC::_taskLoop() {
     while (true) {
         // Read decoded RMT signals from the buffer and parse button presses
         _processRmtData();
+        vTaskDelay(pdMS_TO_TICKS(1));
         
         // Ensure SPI packet reaches radio consistently
         sendStatus();

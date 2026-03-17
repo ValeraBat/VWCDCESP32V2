@@ -1,4 +1,4 @@
-#include <Arduino.h>
+﻿#include <Arduino.h>
 #include <WiFi.h>
 #include "BT1026D_driver.h"
 #include "cdc.h"
@@ -299,7 +299,11 @@ void setup() {
     cdcModule.setDiagCallback([](const char* line){
         webUI_broadcastCdcRaw(String(line));
     });
-    safeSetCdcTrack(DisplayTracks::WAITING_FOR_BT); // Стартуем с трека ожидания 88
+    safeSetCdcTrack(DisplayTracks::WAITING_FOR_BT);
+
+    // КРИТИЧНО: Дать эмулятору CDC 300мс форы для общения с магнитолой
+    // ДО старта тяжелых модулей WiFi и Bluetooth, иначе магнитола отбросит CDC!
+    delay(100);
 
     // 2. Запускаем WiFi и WebUI Сервер (это может занять время, но CDC таск уже запущен параллельно)
     webUI_init();
