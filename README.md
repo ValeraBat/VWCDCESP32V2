@@ -39,7 +39,7 @@ When you press "Next Track" on your 20-year-old car radio, the ESP32 intercepts 
 
 ---
 
-## � PCB & Hardware
+##  PCB & Hardware
 A complete custom PCB layout has been designed for the ESP-WROOM-32D module combined with the BT1036C Bluetooth module.
 
 *   [**⬇️ Download Gerber Files**](docs/Gerber_VWCDC_PCB_VWCDC-ESP-WROOM-32D-BT1036C_2026-03-17.zip) (Ready for production at JLCPCB / PCBWay)
@@ -52,7 +52,7 @@ A complete custom PCB layout has been designed for the ESP-WROOM-32D module comb
 
 ---
 
-## �🚀 Getting Started (PlatformIO)
+## 🚀 Getting Started (PlatformIO)
 
 1. Clone this repository:
 ```bash
