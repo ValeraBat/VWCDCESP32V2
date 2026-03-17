@@ -1,6 +1,6 @@
 <div align="center">
 
-# ?? VW CDC ESP32 Bluetooth Emulator V2
+# VW CDC ESP32 Bluetooth Emulator V2
 
 [![PlatformIO](https://img.shields.io/badge/PlatformIO-Compatible-orange.svg)](https://platformio.org/)
 [![ESP32](https://img.shields.io/badge/ESP32-FreeRTOS-blue.svg)](https://www.espressif.com/)
