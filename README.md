@@ -13,7 +13,7 @@
 ---
 
 ## 📌 What is this?
-This project is an advanced **CD Changer (CDC) Emulator** built on the powerful dual-core ESP32 microcontroller. Instead of just tricking the radio into opening its AUX port, this system seamlessly bridges the classic Volkswagen SPI/NEC IR data bus with modern high-end Bluetooth modules (like the QCC3034-based Feasycom BT1026D / BT1036C).
+This project is an advanced **CD Changer (CDC) Emulator** built on the powerful dual-core ESP32 microcontroller. Instead of just tricking the radio into opening its AUX port, this system seamlessly bridges the classic Volkswagen SPI/NEC IR data bus with modern high-end Bluetooth modules (like the QCC3034-based Feasycom BT1026D / BT1026D).
 
 When you press "Next Track" on your 20-year-old car radio, the ESP32 intercepts the signal and commands your smartphone to skip the song via Bluetooth!
 
@@ -39,10 +39,10 @@ When you press "Next Track" on your 20-year-old car radio, the ESP32 intercepts 
 
 ---
 
-##  PCB & Hardware
-A complete custom PCB layout has been designed for the ESP-WROOM-32D module combined with the BT1036C Bluetooth module.
+## 📸 PCB & Hardware
+A complete custom PCB layout has been designed for the ESP-WROOM-32D module combined with the BT1026D Bluetooth module.
 
-*   [**⬇️ Download Gerber Files**](docs/Gerber_VWCDC_PCB_VWCDC-ESP-WROOM-32D-BT1036C_2026-03-17.zip) (Ready for production at JLCPCB / PCBWay)
+*   [**⬇️ Download Gerber Files**](docs/Gerber_VWCDC_PCB_VWCDC-ESP-WROOM-32D-BT1026D_2026-03-17.zip) (Ready for production at JLCPCB / PCBWay)
 
 ### Schematic
 ![Schematic](docs/Schematic_VWCDC_2026-03-17.png)
